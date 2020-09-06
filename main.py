@@ -70,14 +70,14 @@ def change_gameboard(gameboard, field, player):
         return False
 
 
-def check_one_left(gameboard):
+def check_one_left(gameboard, player):
     new_board = copy.deepcopy(gameboard)
     row = 0
     element = 0
     while row < 3:
         while element < 3:
             if gameboard[row][element] == 0:
-                new_board[row][element] = 2
+                new_board[row][element] = player
                 if check_for_3(new_board)[0] is True:
                     return new_board, True
                 else:
@@ -91,29 +91,24 @@ def check_one_left(gameboard):
 def make_duo(gameboard):
     row = 0
     element = 0
-    rowchecker = -1
-    elementchecker = -1
-    new_board = copy.deepcopy(gameboard)
+    possibilities = []
+    new_gameboard = copy.deepcopy(gameboard)
     while row < 3:
         while element < 3:
-            if gameboard[row][element] == 2:
-                while rowchecker < 2:
-                    while elementchecker < 2:
-                        if element + elementchecker in range(0, 3) and row + rowchecker in range(0, 3):
-                            if gameboard[row + rowchecker][element + elementchecker] == 0:
-                                new_board[row + rowchecker][element + elementchecker] = 2
-                                if check_one_left(new_board)[1] is True:
-                                    return new_board, True
-                                else:
-                                    new_board = copy.deepcopy(gameboard)
-                        elementchecker += 1
-                    rowchecker += 1
-                    elementchecker = -1
-                rowchecker = -1
+            if new_gameboard[row][element] == 0:
+                new_gameboard[row][element] = 2
+            if check_one_left(new_gameboard, 2)[1] is True:
+                possibilities.append([row, element])
+            new_gameboard = copy.deepcopy(gameboard)
             element += 1
-        row += 1
         element = 0
-    return gameboard, False
+        row += 1
+    if possibilities == []:
+        return gameboard, False
+    possibility_pos = random.randint(0, (len(possibilities) - 1))
+    possibility = possibilities[possibility_pos]
+    new_gameboard[possibility[0]][possibility[1]] = 2
+    return new_gameboard, True
 
 
 def make_random_move(gameboard):
@@ -125,7 +120,7 @@ def make_random_move(gameboard):
             return new_board
 
 
-def full_gameboard(gameboard):
+def check_full_gameboard(gameboard):
     for row in gameboard:
         for element in row:
             if element != 0:
@@ -139,10 +134,10 @@ def full_gameboard(gameboard):
 def AI_move(gameboard, difficulty):
     #attempts_to_3 = 0
     #possibilities = []
-    if full_gameboard(gameboard):
+    if check_full_gameboard(gameboard):
         return False
-    if check_one_left(gameboard)[1] is True:
-        return check_one_left(gameboard)[0]
+    if check_one_left(gameboard, 2)[1] is True:
+        return check_one_left(gameboard, 2)[0]
     elif make_duo(gameboard)[1] is True:
         return make_duo(gameboard)[0]
     else:
@@ -150,7 +145,6 @@ def AI_move(gameboard, difficulty):
 
 
 gameboard = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
-
 #if check_for_3(gameboard)[0] == True:
 #print("Gewonnen hat Spieler " + str(check_for_3(gameboard)[1]))
 #elif check_for_3(gameboard)[0] == False: print("no winner")
@@ -188,12 +182,12 @@ while(running):
             current_player = 1
         if check_for_3(gameboard)[0] is True:
             game_running = False
-        elif full_gameboard(gameboard) is True:
+        elif check_full_gameboard(gameboard) is True:
             game_running = False
     if check_for_3(gameboard)[1] == 1:
         print("Du hast gewonnen!")
     elif check_for_3(gameboard)[1] == 2:
         print("Du hast verloren!")
-    elif full_gameboard(gameboard) is True:
+    elif check_full_gameboard(gameboard) is True:
         print("Unentschieden!")
     input("")

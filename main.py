@@ -70,7 +70,7 @@ def change_gameboard(gameboard, field, player):
         return False
 
 
-def check_one_left(gameboard, player):
+def check_one_left(gameboard, player, block=False):
     new_board = copy.deepcopy(gameboard)
     row = 0
     element = 0
@@ -78,7 +78,9 @@ def check_one_left(gameboard, player):
         while element < 3:
             if gameboard[row][element] == 0:
                 new_board[row][element] = player
-                if check_for_3(new_board)[0] is True:
+                if check_for_3(new_board)[0]:
+                    if block:
+                        new_board[row][element] = 2
                     return new_board, True
                 else:
                     new_board = copy.deepcopy(gameboard)
@@ -97,7 +99,7 @@ def make_duo(gameboard):
         while element < 3:
             if new_gameboard[row][element] == 0:
                 new_gameboard[row][element] = 2
-            if check_one_left(new_gameboard, 2)[1] is True:
+            if check_one_left(new_gameboard, 2)[1]:
                 possibilities.append([row, element])
             new_gameboard = copy.deepcopy(gameboard)
             element += 1
@@ -112,7 +114,7 @@ def make_duo(gameboard):
 
 
 def make_random_move(gameboard):
-    while(True):
+    while True:
         new_board = change_gameboard(gameboard, random.randint(1, 9), 2)
         if new_board is False:
             continue
@@ -130,64 +132,78 @@ def check_full_gameboard(gameboard):
     return True
 
 
-
 def AI_move(gameboard, difficulty):
-    #attempts_to_3 = 0
-    #possibilities = []
     if check_full_gameboard(gameboard):
         return False
-    if check_one_left(gameboard, 2)[1] is True:
+    if check_one_left(gameboard, 2)[1]:
         return check_one_left(gameboard, 2)[0]
-    elif make_duo(gameboard)[1] is True:
+    elif check_one_left(gameboard, 1, True)[1]:
+        if difficulty == 1 and random.randint(0, 3) < 2:
+            return check_one_left(gameboard, 1, True)[0]
+        elif difficulty == 2 and random.randint(0, 12) < 2:
+            return check_one_left(gameboard, 1, True)[0]
+        elif difficulty == 3:
+            return check_one_left(gameboard, 1, True)[0]
+    if make_duo(gameboard)[1]:
         return make_duo(gameboard)[0]
     else:
         return make_random_move(gameboard)
 
 
-gameboard = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
-#if check_for_3(gameboard)[0] == True:
-#print("Gewonnen hat Spieler " + str(check_for_3(gameboard)[1]))
-#elif check_for_3(gameboard)[0] == False: print("no winner")
+# if check_for_3(gameboard)[0] == True:
+# print("Gewonnen hat Spieler " + str(check_for_3(gameboard)[1]))
+# elif check_for_3(gameboard)[0] == False: print("no winner")
 
 running = True
-while(running):
+while running:
+    gameboard = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
     print("---TicTacToe by Julian Szigethy---")
     print("Moin! Bitte wähle die Schwierigkeit aus:")
     print("(1) Einfach")
     print("(2) Normal")
     print("(3) Unmöglich")
-    difficulty = int(input())
+    eingabe = ""
+    while True:
+        eingabe = input("Schwierigkeit: ")
+        if eingabe in ["1", "2", "3"]:
+            break
+    difficulty = int(eingabe)
+    print("-----------------------------------------------")
     print("Das Spielfeld gibst du ein, indem du eine Zahl von 1-9 eingibst.")
     print("Du bist Spieler X und spielst gegen den Bot O.")
     print("1  2  3\n4  5  6\n7  8  9")
     input("Verstanden? Drücke ENTER zum Starten!")
     game_running = True
-    current_player = 1                  #Spieler 1 ist echt, Spieler 2 ist der Bot
-    while(game_running):
+    current_player = 1                  # Spieler 1 ist echt, Spieler 2 ist der Bot
+    while game_running:
         if current_player == 1:
             print_gameboard(gameboard)
             print("Du bist am Zug!")
             eingabeschleife = True
-            while(eingabeschleife):
-                field_input = int(input("Gib das Feld ein: "))
-                if change_gameboard(copy.deepcopy(gameboard), field_input, current_player) is False:
-                    print("Falsche Eingabe! Vielleicht ist das Feld belegt?")
-                else:
-                    gameboard = change_gameboard(gameboard, field_input, current_player)
-                    eingabeschleife = False
+            while eingabeschleife:
+                try:
+                    field_input = int(input("Gib das Feld ein: "))
+                    if change_gameboard(copy.deepcopy(gameboard), field_input, current_player) is False:
+                        print("Falsche Eingabe! Vielleicht ist das Feld belegt?")
+                    else:
+                        gameboard = change_gameboard(gameboard, field_input, current_player)
+                        eingabeschleife = False
+                except ValueError:
+                    print("Leere Eingabe, probiere es nochmal!")
             current_player = 2
         elif current_player == 2:
             print("Der Bot ist am Zug...")
             gameboard = AI_move(gameboard, difficulty)
             current_player = 1
-        if check_for_3(gameboard)[0] is True:
+        if check_for_3(gameboard)[0]:
             game_running = False
-        elif check_full_gameboard(gameboard) is True:
+        elif check_full_gameboard(gameboard):
             game_running = False
     if check_for_3(gameboard)[1] == 1:
         print("Du hast gewonnen!")
     elif check_for_3(gameboard)[1] == 2:
         print("Du hast verloren!")
-    elif check_full_gameboard(gameboard) is True:
+        print_gameboard(gameboard)
+    elif check_full_gameboard(gameboard):
         print("Unentschieden!")
     input("")

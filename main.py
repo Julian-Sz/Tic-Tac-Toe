@@ -63,23 +63,23 @@ def change_gameboard(gameboard, field, player):
     try:
         if gameboard[switcher.get(field)[0]][switcher.get(field)[1]] == 0:
             gameboard[switcher.get(field)[0]][switcher.get(field)[1]] = player
-            return gameboard
+            return True, gameboard
         else:
-            return False
+            return False, gameboard[switcher.get(field)[0]][switcher.get(field)[1]]
     except:
         return False
 
 
-def check_one_left(gameboard, player, block=False):
+def check_one_left(gameboard, checked_player):
     new_board = copy.deepcopy(gameboard)
     row = 0
     element = 0
     while row < 3:
         while element < 3:
             if gameboard[row][element] == 0:
-                new_board[row][element] = player
+                new_board[row][element] = checked_player
                 if check_for_3(new_board)[0]:
-                    if block:
+                    if checked_player == 1:
                         new_board[row][element] = 2
                     return new_board, True
                 else:
@@ -110,13 +110,17 @@ def make_duo(gameboard):
     possibility_pos = random.randint(0, (len(possibilities) - 1))
     possibility = possibilities[possibility_pos]
     new_gameboard[possibility[0]][possibility[1]] = 2
+    print(new_gameboard)
     return new_gameboard, True
 
 
 def make_random_move(gameboard):
+    if check_full_gameboard(gameboard):
+        return False
     while True:
-        new_board = change_gameboard(gameboard, random.randint(1, 9), 2)
-        if new_board is False:
+        field = random.randint(1, 9)
+        new_board = change_gameboard(copy.deepcopy(gameboard), field, 2)[1]
+        if change_gameboard(gameboard, field, 2)[0] is False:
             continue
         else:
             return new_board
@@ -132,27 +136,36 @@ def check_full_gameboard(gameboard):
     return True
 
 
+def check_for_strategies(gameboard):
+    row = 0
+    element = 0
+    new_board = copy.deepcopy(gameboard)
+    for row in gameboard:
+        "placeholder"
+
+
 def AI_move(gameboard, difficulty):
     if check_full_gameboard(gameboard):
         return False
     if check_one_left(gameboard, 2)[1]:
         return check_one_left(gameboard, 2)[0]
-    elif check_one_left(gameboard, 1, True)[1]:
+    elif check_one_left(gameboard, 1)[1]:
         if difficulty == 1 and random.randint(0, 3) < 2:
-            return check_one_left(gameboard, 1, True)[0]
+            return check_one_left(gameboard, 1)[0]
         elif difficulty == 2 and random.randint(0, 12) < 2:
-            return check_one_left(gameboard, 1, True)[0]
+            return check_one_left(gameboard, 1)[0]
         elif difficulty == 3:
-            return check_one_left(gameboard, 1, True)[0]
+            return check_one_left(gameboard, 1)[0]
     if make_duo(gameboard)[1]:
         return make_duo(gameboard)[0]
     else:
         return make_random_move(gameboard)
 
 
-# if check_for_3(gameboard)[0] == True:
-# print("Gewonnen hat Spieler " + str(check_for_3(gameboard)[1]))
-# elif check_for_3(gameboard)[0] == False: print("no winner")
+#gameboard = [[1, 0, 0], [0, 1, 0], [0, 0, 0]]
+#gameboard = AI_move(gameboard, 3)
+#print_gameboard(gameboard)
+
 
 running = True
 while running:
@@ -162,11 +175,14 @@ while running:
     print("(1) Einfach")
     print("(2) Normal")
     print("(3) Unmöglich")
+    print("Schreibe \"esc\" zum Beenden!")
     eingabe = ""
     while True:
         eingabe = input("Schwierigkeit: ")
         if eingabe in ["1", "2", "3"]:
             break
+        elif eingabe == "esc":
+            raise TimeoutError("Der Prozess wurde beendet. Bis bald.")
     difficulty = int(eingabe)
     print("-----------------------------------------------")
     print("Das Spielfeld gibst du ein, indem du eine Zahl von 1-9 eingibst.")
@@ -183,13 +199,13 @@ while running:
             while eingabeschleife:
                 try:
                     field_input = int(input("Gib das Feld ein: "))
-                    if change_gameboard(copy.deepcopy(gameboard), field_input, current_player) is False:
+                    if change_gameboard(copy.deepcopy(gameboard), field_input, current_player)[0] is False:
                         print("Falsche Eingabe! Vielleicht ist das Feld belegt?")
                     else:
-                        gameboard = change_gameboard(gameboard, field_input, current_player)
+                        gameboard = change_gameboard(gameboard, field_input, current_player)[1]
                         eingabeschleife = False
                 except ValueError:
-                    print("Leere Eingabe, probiere es nochmal!")
+                    print("Fehlerhafte Eingabe, probiere es nochmal!")
             current_player = 2
         elif current_player == 2:
             print("Der Bot ist am Zug...")
@@ -200,10 +216,12 @@ while running:
         elif check_full_gameboard(gameboard):
             game_running = False
     if check_for_3(gameboard)[1] == 1:
+        print_gameboard(gameboard)
         print("Du hast gewonnen!")
     elif check_for_3(gameboard)[1] == 2:
-        print("Du hast verloren!")
         print_gameboard(gameboard)
+        print("Du hast verloren!")
     elif check_full_gameboard(gameboard):
+        print_gameboard(gameboard)
         print("Unentschieden!")
     input("")

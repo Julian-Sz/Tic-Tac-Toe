@@ -110,7 +110,6 @@ def make_duo(gameboard):
     possibility_pos = random.randint(0, (len(possibilities) - 1))
     possibility = possibilities[possibility_pos]
     new_gameboard[possibility[0]][possibility[1]] = 2
-    print(new_gameboard)
     return new_gameboard, True
 
 

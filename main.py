@@ -49,6 +49,7 @@ def check_for_3(gameboard):
 
 
 def change_gameboard(gameboard, field, player):
+    copied_board = copy.deepcopy(gameboard)
     switcher = {
         1: [0, 0],
         2: [0, 1],
@@ -61,13 +62,13 @@ def change_gameboard(gameboard, field, player):
         9: [2, 2]
     }
     try:
-        if gameboard[switcher.get(field)[0]][switcher.get(field)[1]] == 0:
-            gameboard[switcher.get(field)[0]][switcher.get(field)[1]] = player
-            return True, gameboard
+        if copied_board[switcher.get(field)[0]][switcher.get(field)[1]] == 0:
+            copied_board[switcher.get(field)[0]][switcher.get(field)[1]] = player
+            return True, copied_board
         else:
-            return False, gameboard[switcher.get(field)[0]][switcher.get(field)[1]]
+            return False, copied_board[switcher.get(field)[0]][switcher.get(field)[1]]
     except:
-        return False
+        return False, gameboard
 
 
 def check_one_left(gameboard, checked_player):
@@ -90,13 +91,16 @@ def check_one_left(gameboard, checked_player):
     return gameboard, False
 
 
-def make_duo(gameboard):
+def make_duo(gameboard, forbidden_fields = []):
     row = 0
     element = 0
     possibilities = []
     new_gameboard = copy.deepcopy(gameboard)
     while row < 3:
         while element < 3:
+            if forbidden_fields != []:
+                if row in forbidden_fields[0] and element in forbidden_fields[1]:       #genutzt bei Strategieprüfung
+                    continue
             if new_gameboard[row][element] == 0:
                 new_gameboard[row][element] = 2
             if check_one_left(new_gameboard, 2)[1]:
@@ -136,32 +140,57 @@ def check_full_gameboard(gameboard):
 
 
 def check_for_strategies(gameboard):
-    row = 0
-    element = 0
     new_board = copy.deepcopy(gameboard)
-    for row in gameboard:
-        "placeholder"
+    hot_fields = []
+    forbidden_fields = []
+    for mittelfelder in [[2, 4], [2, 6], [4, 8], [6, 8]]:
+        for mittelfeld in mittelfelder:
+            if change_gameboard(new_board, mittelfeld, 2)[0]:
+                continue
+            elif change_gameboard(new_board, mittelfeld, 2)[0] is False:
+                if change_gameboard(new_board, mittelfeld, 2)[1] == 1:
+                    hot_fields.append(mittelfeld)
+        if len(hot_fields) == 2:
+            feld_zu_belegen = hot_fields[0] + hot_fields[1] - 5
+            if change_gameboard(new_board, feld_zu_belegen, 2)[0]:
+                return change_gameboard(new_board, feld_zu_belegen, 2)[1], True
+        hot_fields = []
+
+    for eckfelder in [1, 3, 7, 9]:
+        if change_gameboard(new_board, eckfelder, 2)[0] is False:   # wenn ein Eckfeld belegt ist
+            if change_gameboard(new_board, 5, 2)[0]:    # wenn das Feld in der Mitte frei ist
+                forbidden_fields = [[0, 2], [0, 2]]
+                return change_gameboard(new_board, 5, 2)[1], True, forbidden_fields
+    return gameboard, False, False
 
 
 def AI_move(gameboard, difficulty):
+    if difficulty == 0:
+        raise ValueError("Falscher Schwierigkeitswert")
     if check_full_gameboard(gameboard):
         return False
     if check_one_left(gameboard, 2)[1]:
         return check_one_left(gameboard, 2)[0]
     elif check_one_left(gameboard, 1)[1]:
-        if difficulty == 1 and random.randint(0, 3) < 2:
+        if difficulty == 1 and random.randint(0, 12) < 2:
             return check_one_left(gameboard, 1)[0]
-        elif difficulty == 2 and random.randint(0, 12) < 2:
+        elif difficulty == 2 and random.randint(0, 3) < 2:
             return check_one_left(gameboard, 1)[0]
         elif difficulty == 3:
             return check_one_left(gameboard, 1)[0]
+    if difficulty == 3 and check_for_strategies(gameboard)[1]:
+        return check_for_strategies(gameboard)[0]
+    if check_for_strategies(gameboard)[2] is not False:
+        forbidden_fields = check_for_strategies(gameboard)[2]
+    else:
+        forbidden_fields = []
     if make_duo(gameboard)[1]:
-        return make_duo(gameboard)[0]
+        return make_duo(gameboard, forbidden_fields)[0]
     else:
         return make_random_move(gameboard)
 
 
-#gameboard = [[1, 0, 0], [0, 1, 0], [0, 0, 0]]
+#gameboard = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
 #gameboard = AI_move(gameboard, 3)
 #print_gameboard(gameboard)
 
@@ -181,7 +210,7 @@ while running:
         if eingabe in ["1", "2", "3"]:
             break
         elif eingabe == "esc":
-            raise TimeoutError("Der Prozess wurde beendet. Bis bald.")
+            raise TimeoutError("Das Spiel wurde beendet. Bis bald.")
     difficulty = int(eingabe)
     print("-----------------------------------------------")
     print("Das Spielfeld gibst du ein, indem du eine Zahl von 1-9 eingibst.")
@@ -198,10 +227,10 @@ while running:
             while eingabeschleife:
                 try:
                     field_input = int(input("Gib das Feld ein: "))
-                    if change_gameboard(copy.deepcopy(gameboard), field_input, current_player)[0] is False:
+                    if change_gameboard(copy.deepcopy(gameboard), field_input, 1)[0] is False:
                         print("Falsche Eingabe! Vielleicht ist das Feld belegt?")
                     else:
-                        gameboard = change_gameboard(gameboard, field_input, current_player)[1]
+                        gameboard = change_gameboard(gameboard, field_input, 1)[1]
                         eingabeschleife = False
                 except ValueError:
                     print("Fehlerhafte Eingabe, probiere es nochmal!")
